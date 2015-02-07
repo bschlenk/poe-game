@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 require "gosu"
+require "./grass"
 
 class Poe
-    FRAME_WAIT = 8
+    FRAME_WAIT = 4
     def initialize window
         @window = window
         @width = 552 / 3
@@ -24,7 +25,6 @@ class Poe
     end
 
     def update
-        puts @frameWait
         @frameWait -= 1
         if @frameWait == 0
             @frame += 1
@@ -40,24 +40,31 @@ class Poe
             @moving = true
             @x += 5
         end
+        if @window.button_down? Gosu::KbUp
+            @y -= 5
+        elsif @window.button_down? Gosu::KbDown
+            @y += 5
+        end
     end
 
     def draw
         f = @frame % @image.size
         image = @image[f]
         if @direction == :right
-            image.draw @x, @y, 1
+            image.draw @x, @y, @y
         else
-            image.draw @x + @width, @y, 1, -1, 1
+            image.draw @x + @width, @y, @y, -1, 1
         end
     end
 end
 
 class Game < Gosu::Window
+    BACKGROUND_COLOR = Gosu::Color::GREEN
     def initialize width=800, height=600, fullscreen=false
         super
         self.caption = 'Poe Game'
         @poe = Poe.new self
+        @grass = []
     end
 
     def button_down id
@@ -66,10 +73,20 @@ class Game < Gosu::Window
 
     def update
         @poe.update
+        if Random.rand(20) > 18
+            @grass.push(Grass.new(self, Random.rand(self.height)))
+        end
+        @grass.each { |x| x.update }
+        @grass.reject! { |x| x.offscreen? }
     end
 
     def draw
         @poe.draw
+        draw_quad(0, 0, BACKGROUND_COLOR,
+                  0, self.height, BACKGROUND_COLOR,
+                  self.width, self.height, BACKGROUND_COLOR,
+                  self.width, 0, BACKGROUND_COLOR)
+        @grass.each { |x| x.draw }
     end
 end
 
